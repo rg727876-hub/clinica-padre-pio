@@ -35,6 +35,14 @@ def gen_codigo():
     return 'C-' + str(uuid.uuid4())[:8].upper()
 
 
+def validar_telefono(tel):
+    """Retorna True si el teléfono es vacío/None o tiene solo dígitos y máximo 9."""
+    if not tel:
+        return True
+    digits = tel.strip()
+    return digits.isdigit() and len(digits) <= 9
+
+
 # ─── Auth ────────────────────────────────────────────────────────────────────
 
 @app.route('/', methods=['GET', 'POST'])
@@ -112,6 +120,10 @@ def admin_crear_usuario():
     if request.method == 'POST':
         f = request.form
         try:
+            if not validar_telefono(f.get('telefono')):
+                flash('El teléfono debe tener solo dígitos y máximo 9 caracteres.', 'danger')
+                db.close()
+                return render_template('admin/crear_usuario.html', servicios=servicios)
             pw = hash_pw(f['contrasena'])
             cur = db.execute('''INSERT INTO usuarios (dni,nombres,apellidos,correo,telefono,rol,contrasena,especialidad)
                                 VALUES (?,?,?,?,?,?,?,?)''',
@@ -140,6 +152,10 @@ def admin_editar_usuario(uid):
     seleccionados = [r['servicio_id'] for r in db.execute("SELECT servicio_id FROM doctor_servicio WHERE doctor_id=?", (uid,)).fetchall()]
     if request.method == 'POST':
         f = request.form
+        if not validar_telefono(f.get('telefono')):
+            flash('El teléfono debe tener solo dígitos y máximo 9 caracteres.', 'danger')
+            db.close()
+            return render_template('admin/editar_usuario.html', user=user, servicios=servicios, seleccionados=seleccionados)
         db.execute('''UPDATE usuarios SET nombres=?,apellidos=?,correo=?,telefono=?,rol=?,especialidad=?,estado=?
                       WHERE id=?''',
                    (f['nombres'], f['apellidos'], f['correo'], f.get('telefono'),
@@ -379,6 +395,10 @@ def crear_paciente():
     if request.method == 'POST':
         f = request.form
         db = get_db()
+        if not validar_telefono(f.get('telefono')):
+            flash('El teléfono debe tener solo dígitos y máximo 9 caracteres.', 'danger')
+            db.close()
+            return render_template('recepcionista/crear_paciente.html')
         try:
             db.execute('''INSERT INTO pacientes (dni,nombres,apellidos,telefono,correo,direccion,fecha_nacimiento,sexo)
                           VALUES (?,?,?,?,?,?,?,?)''',
@@ -402,6 +422,10 @@ def editar_paciente(pid):
     paciente = db.execute("SELECT * FROM pacientes WHERE id=?", (pid,)).fetchone()
     if request.method == 'POST':
         f = request.form
+        if not validar_telefono(f.get('telefono')):
+            flash('El teléfono debe tener solo dígitos y máximo 9 caracteres.', 'danger')
+            db.close()
+            return render_template('recepcionista/editar_paciente.html', paciente=paciente)
         db.execute('''UPDATE pacientes SET telefono=?,correo=?,direccion=?,fecha_nacimiento=?,sexo=?
                       WHERE id=?''',
                    (f.get('telefono'), f.get('correo'), f.get('direccion'),

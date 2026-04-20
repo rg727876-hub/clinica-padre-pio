@@ -35,7 +35,7 @@
         </div>
         <div class="col-md-6">
           <label class="form-label fw-semibold">Teléfono</label>
-          <input type="text" name="telefono" class="form-control" value="{{ user.telefono or '' }}">
+          <input type="text" name="telefono" class="form-control" value="{{ user.telefono or '' }}" maxlength="9" pattern="\d{1,9}" title="Solo dígitos, máximo 9 caracteres">
         </div>
         <div class="col-md-6">
           <label class="form-label fw-semibold">Estado</label>
