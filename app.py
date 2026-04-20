@@ -358,13 +358,19 @@ def admin_reportes_logout():
 def pacientes():
     db = get_db()
     q = request.args.get('q', '').strip()
+    filtro = request.args.get('filtro', 'activo')
+    conditions = []
+    params = []
     if q:
-        rows = db.execute("SELECT * FROM pacientes WHERE dni LIKE ? OR nombres LIKE ? OR apellidos LIKE ?",
-                          (f'%{q}%', f'%{q}%', f'%{q}%')).fetchall()
-    else:
-        rows = db.execute("SELECT * FROM pacientes ORDER BY fecha_registro DESC").fetchall()
+        conditions.append("(dni LIKE ? OR nombres LIKE ? OR apellidos LIKE ?)")
+        params += [f'%{q}%', f'%{q}%', f'%{q}%']
+    if filtro in ('activo', 'inactivo'):
+        conditions.append("estado = ?")
+        params.append(filtro)
+    where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
+    rows = db.execute(f"SELECT * FROM pacientes {where} ORDER BY fecha_registro DESC", params).fetchall()
     db.close()
-    return render_template('recepcionista/pacientes.html', pacientes=rows, q=q)
+    return render_template('recepcionista/pacientes.html', pacientes=rows, q=q, filtro=filtro)
 
 
 @app.route('/pacientes/crear', methods=['GET', 'POST'])
@@ -407,6 +413,21 @@ def editar_paciente(pid):
         return redirect(url_for('pacientes'))
     db.close()
     return render_template('recepcionista/editar_paciente.html', paciente=paciente)
+
+
+@app.route('/pacientes/<int:pid>/estado', methods=['POST'])
+@login_required(['recepcionista', 'administrador'])
+def cambiar_estado_paciente(pid):
+    db = get_db()
+    paciente = db.execute("SELECT * FROM pacientes WHERE id=?", (pid,)).fetchone()
+    if paciente:
+        nuevo = 'inactivo' if paciente['estado'] == 'activo' else 'activo'
+        db.execute("UPDATE pacientes SET estado=? WHERE id=?", (nuevo, pid))
+        db.commit()
+        audit(session['usuario_id'], 'CAMBIAR_ESTADO_PACIENTE', f"ID: {pid} → {nuevo}", request.remote_addr)
+        flash(f"Paciente marcado como {nuevo}.", 'info')
+    db.close()
+    return redirect(url_for('pacientes', filtro=request.args.get('filtro', 'activo'), q=request.args.get('q', '')))
 
 
 @app.route('/pacientes/<int:pid>/eliminar', methods=['POST'])

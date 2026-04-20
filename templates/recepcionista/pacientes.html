@@ -12,10 +12,26 @@
   <div class="card-body">
     <form method="GET" class="d-flex gap-2">
       <input type="text" name="q" class="form-control" placeholder="Buscar por DNI, nombres o apellidos..." value="{{ q }}">
+      <input type="hidden" name="filtro" value="{{ filtro }}">
       <button type="submit" class="btn btn-primary px-4"><i class="bi bi-search"></i></button>
-      {% if q %}<a href="{{ url_for('pacientes') }}" class="btn btn-outline-secondary">Limpiar</a>{% endif %}
+      {% if q %}<a href="{{ url_for('pacientes', filtro=filtro) }}" class="btn btn-outline-secondary">Limpiar</a>{% endif %}
     </form>
   </div>
+</div>
+
+<div class="btn-group mb-3" role="group">
+  <a href="{{ url_for('pacientes', filtro='activo', q=q) }}"
+     class="btn btn-sm {{ 'btn-success' if filtro == 'activo' else 'btn-outline-success' }}">
+    <i class="bi bi-person-check-fill me-1"></i>Activos
+  </a>
+  <a href="{{ url_for('pacientes', filtro='inactivo', q=q) }}"
+     class="btn btn-sm {{ 'btn-secondary' if filtro == 'inactivo' else 'btn-outline-secondary' }}">
+    <i class="bi bi-person-slash me-1"></i>Inactivos
+  </a>
+  <a href="{{ url_for('pacientes', filtro='todos', q=q) }}"
+     class="btn btn-sm {{ 'btn-dark' if filtro == 'todos' else 'btn-outline-dark' }}">
+    <i class="bi bi-people-fill me-1"></i>Todos
+  </a>
 </div>
 
 <div class="card shadow-sm border-0">
@@ -23,11 +39,11 @@
     <div class="table-responsive">
       <table class="table table-hover mb-0 align-middle">
         <thead class="table-light">
-          <tr><th>DNI</th><th>Nombre completo</th><th>Teléfono</th><th>Correo</th><th>Sexo</th><th>F. Nacimiento</th><th>Acciones</th></tr>
+          <tr><th>DNI</th><th>Nombre completo</th><th>Teléfono</th><th>Correo</th><th>Sexo</th><th>F. Nacimiento</th><th>Estado</th><th>Acciones</th></tr>
         </thead>
         <tbody>
           {% for p in pacientes %}
-          <tr>
+          <tr class="{{ 'table-secondary text-muted' if p.estado == 'inactivo' else '' }}">
             <td><code>{{ p.dni }}</code></td>
             <td class="fw-semibold">{{ p.nombres }} {{ p.apellidos }}</td>
             <td>{{ p.telefono or '—' }}</td>
@@ -37,18 +53,33 @@
                 {% else %}—{% endif %}</td>
             <td>{{ p.fecha_nacimiento or '—' }}</td>
             <td>
+              {% if p.estado == 'activo' %}
+                <span class="badge bg-success"><i class="bi bi-circle-fill me-1" style="font-size:.55rem"></i>Activo</span>
+              {% else %}
+                <span class="badge bg-secondary"><i class="bi bi-circle me-1" style="font-size:.55rem"></i>Inactivo</span>
+              {% endif %}
+            </td>
+            <td>
               <a href="{{ url_for('editar_paciente', pid=p.id) }}" class="btn btn-sm btn-outline-primary me-1" title="Editar">
                 <i class="bi bi-pencil-fill"></i>
               </a>
+              <form method="POST" action="{{ url_for('cambiar_estado_paciente', pid=p.id) }}?filtro={{ filtro }}&q={{ q }}"
+                    class="d-inline"
+                    onsubmit="return confirm('{% if p.estado == 'activo' %}¿Marcar a {{ p.nombres }} como inactivo?{% else %}¿Reactivar a {{ p.nombres }}?{% endif %}')">
+                <button class="btn btn-sm {{ 'btn-outline-warning' if p.estado == 'activo' else 'btn-outline-success' }}"
+                        title="{{ 'Desactivar' if p.estado == 'activo' else 'Activar' }}">
+                  <i class="bi {{ 'bi-person-dash-fill' if p.estado == 'activo' else 'bi-person-check-fill' }}"></i>
+                </button>
+              </form>
               <form method="POST" action="{{ url_for('eliminar_paciente', pid=p.id) }}"
                     class="d-inline" onsubmit="return confirm('¿Eliminar paciente {{ p.nombres }}?')">
-                <button class="btn btn-sm btn-outline-danger" title="Eliminar"><i class="bi bi-trash-fill"></i></button>
+                <button class="btn btn-sm btn-outline-danger ms-1" title="Eliminar"><i class="bi bi-trash-fill"></i></button>
               </form>
             </td>
           </tr>
           {% else %}
-          <tr><td colspan="7" class="text-center text-muted py-4">
-            {% if q %}No se encontraron pacientes con "{{ q }}".{% else %}No hay pacientes registrados.{% endif %}
+          <tr><td colspan="8" class="text-center text-muted py-4">
+            {% if q %}No se encontraron pacientes con "{{ q }}".{% else %}No hay pacientes {{ filtro if filtro != 'todos' else '' }} registrados.{% endif %}
           </td></tr>
           {% endfor %}
         </tbody>

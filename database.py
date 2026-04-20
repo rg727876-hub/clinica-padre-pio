@@ -69,6 +69,7 @@ def init_db():
             direccion TEXT,
             fecha_nacimiento TEXT,
             sexo TEXT CHECK(sexo IN ('M','F')),
+            estado TEXT DEFAULT 'activo' CHECK(estado IN ('activo','inactivo')),
             fecha_registro TEXT DEFAULT CURRENT_TIMESTAMP
         );
 
