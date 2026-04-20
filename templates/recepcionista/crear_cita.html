@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% block title %}Nueva Cita{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+  <a href="{{ url_for('citas') }}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
+  <h2 class="fw-bold mb-0"><i class="bi bi-calendar-plus me-2 text-primary"></i>Crear Nueva Cita</h2>
+</div>
+
+<div class="card shadow-sm border-0" style="max-width:750px">
+  <div class="card-body p-4">
+    <form method="POST" id="form-cita">
+      <!-- Paso 1: Paciente -->
+      <h5 class="fw-bold text-primary mb-3"><span class="badge bg-primary me-2">1</span>Paciente</h5>
+      <div class="row g-3 mb-4">
+        <div class="col-md-5">
+          <label class="form-label fw-semibold">DNI del paciente *</label>
+          <div class="input-group">
+            <input type="text" id="dni-buscar" class="form-control" maxlength="8" pattern="\d{8}" placeholder="12345678" required>
+            <button type="button" class="btn btn-outline-primary" onclick="buscarPaciente()">
+              <i class="bi bi-search"></i>
+            </button>
+          </div>
+        </div>
+        <div class="col-md-7">
+          <label class="form-label fw-semibold">Paciente</label>
+          <input type="text" id="nombre-paciente" class="form-control bg-light" readonly placeholder="Busque por DNI...">
+          <input type="hidden" name="paciente_id" id="paciente-id" required>
+        </div>
+        <div id="paciente-no-encontrado" class="col-12 d-none">
+          <div class="alert alert-warning mb-0">
+            Paciente no encontrado.
+            <a href="{{ url_for('crear_paciente') }}" class="alert-link">Registrar nuevo paciente</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Paso 2: Servicio y Doctor -->
+      <h5 class="fw-bold text-primary mb-3"><span class="badge bg-primary me-2">2</span>Servicio y Doctor</h5>
+      <div class="row g-3 mb-4">
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Servicio *</label>
+          <select name="servicio_id" id="sel-servicio" class="form-select" required onchange="cargarDoctores()">
+            <option value="">— Seleccione servicio —</option>
+            {% for s in servicios %}
+            <option value="{{ s.id }}" data-costo="{{ s.costo }}">{{ s.nombre }} — S/ {{ "%.2f"|format(s.costo) }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Doctor *</label>
+          <select name="doctor_id" id="sel-doctor" class="form-select" required onchange="cargarHorarios()" disabled>
+            <option value="">— Seleccione doctor —</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Paso 3: Fecha y Hora -->
+      <h5 class="fw-bold text-primary mb-3"><span class="badge bg-primary me-2">3</span>Fecha y Hora</h5>
+      <div class="row g-3 mb-4" id="seccion-horario" style="display:none!important">
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Fecha *</label>
+          <input type="date" name="fecha" id="inp-fecha" class="form-control" required
+                 min="{{ now }}" onchange="verificarDisponibilidad()">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Hora *</label>
+          <input type="time" name="hora" id="inp-hora" class="form-control" required>
+        </div>
+        <div class="col-12" id="horarios-info"></div>
+      </div>
+
+      <!-- Monto -->
+      <div class="row g-3 mb-4">
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Monto (S/) *</label>
+          <input type="number" name="monto" id="inp-monto" class="form-control" step="0.01" min="0" required>
+        </div>
+        <div class="col-md-8">
+          <label class="form-label fw-semibold">Observaciones</label>
+          <input type="text" name="observaciones" class="form-control" placeholder="Opcional...">
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-lg px-5" id="btn-crear">
+          <i class="bi bi-calendar-check me-2"></i>Crear Cita
+        </button>
+        <a href="{{ url_for('citas') }}" class="btn btn-outline-secondary btn-lg">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('inp-fecha').min = today;
+
+function buscarPaciente() {
+  const dni = document.getElementById('dni-buscar').value.trim();
+  if (dni.length < 8) return;
+  fetch('/api/paciente/' + dni)
+    .then(r => r.json())
+    .then(data => {
+      const noEnc = document.getElementById('paciente-no-encontrado');
+      if (data.ok) {
+        document.getElementById('nombre-paciente').value = data.paciente.nombres + ' ' + data.paciente.apellidos;
+        document.getElementById('paciente-id').value = data.paciente.id;
+        noEnc.classList.add('d-none');
+      } else {
+        document.getElementById('nombre-paciente').value = '';
+        document.getElementById('paciente-id').value = '';
+        noEnc.classList.remove('d-none');
+      }
+    });
+}
+
+function cargarDoctores() {
+  const sid = document.getElementById('sel-servicio').value;
+  const selDoc = document.getElementById('sel-doctor');
+  const monto = document.querySelector(`#sel-servicio option[value="${sid}"]`)?.dataset.costo;
+  if (monto) document.getElementById('inp-monto').value = parseFloat(monto).toFixed(2);
+  selDoc.innerHTML = '<option value="">Cargando...</option>';
+  selDoc.disabled = true;
+  if (!sid) return;
+  fetch('/api/doctores/' + sid)
+    .then(r => r.json())
+    .then(docs => {
+      selDoc.innerHTML = '<option value="">— Seleccione doctor —</option>' +
+        docs.map(d => `<option value="${d.id}">${d.nombre}${d.especialidad?' ('+d.especialidad+')':''}</option>`).join('');
+      selDoc.disabled = false;
+    });
+}
+
+function cargarHorarios() {
+  const did = document.getElementById('sel-doctor').value;
+  const sec = document.getElementById('seccion-horario');
+  if (!did) { sec.style.setProperty('display','none','important'); return; }
+  fetch('/api/horarios/' + did)
+    .then(r => r.json())
+    .then(data => {
+      sec.style.removeProperty('display');
+      const info = document.getElementById('horarios-info');
+      const dias = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+      const byDia = {};
+      dias.forEach(d => byDia[d] = []);
+      data.horarios.forEach(h => { if (byDia[h.dia]) byDia[h.dia].push(h); });
+      info.innerHTML = `<div class="alert alert-info p-2">
+        <strong>Horarios del doctor:</strong><br>
+        ${dias.filter(d => byDia[d].length).map(d =>
+          `${d}: ${byDia[d].map(h => h.hora_inicio+'-'+h.hora_fin).join(', ')}`
+        ).join(' | ')}
+      </div>`;
+    });
+}
+</script>
+{% endblock %}

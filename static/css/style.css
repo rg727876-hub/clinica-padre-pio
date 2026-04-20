@@ -1,0 +1,48 @@
+/* ─── Global ─── */
+body { background-color: #f5f6fa; font-family: 'Segoe UI', sans-serif; }
+
+/* ─── Login ─── */
+.login-bg { background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%); }
+.login-card { width: 420px; border-radius: 16px; border: none; }
+
+/* ─── Navbar ─── */
+.navbar { box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+
+/* ─── Cards ─── */
+.card { border-radius: 12px; }
+.stat-card { transition: transform .2s; }
+.stat-card:hover { transform: translateY(-3px); }
+
+/* ─── Tables ─── */
+.table thead th { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: #6c757d; }
+.table tbody tr:hover { background-color: rgba(13,110,253,0.04); }
+
+/* ─── Badges ─── */
+.badge { font-weight: 500; }
+
+/* ─── Sidebar-like section headers ─── */
+h5 .badge { font-size: 0.75rem; }
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 3px; }
+
+/* ─── Alerts ─── */
+.alert { border-radius: 10px; }
+.alert-sm { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+
+/* ─── Buttons ─── */
+.btn { border-radius: 8px; }
+.btn-lg { border-radius: 10px; }
+
+/* ─── Forms ─── */
+.form-control, .form-select { border-radius: 8px; }
+.input-group > .form-control { border-radius: 8px 0 0 8px; }
+.input-group > .btn { border-radius: 0 8px 8px 0; }
+.input-group > .input-group-text { border-radius: 8px 0 0 8px; }
+.input-group > .input-group-text + .form-control { border-radius: 0; }
+.input-group > .form-control + .btn { border-radius: 0 8px 8px 0; }
+
+/* ─── Calendar cells ─── */
+#calendario .col { min-width: 80px; }

@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% block title %}Servicios{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="fw-bold mb-0"><i class="bi bi-clipboard2-pulse-fill me-2 text-success"></i>Servicios Odontológicos</h2>
+  <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalCrear">
+    <i class="bi bi-plus-circle me-2"></i>Agregar Servicio
+  </button>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0 align-middle">
+        <thead class="table-light">
+          <tr><th>Nombre</th><th>Descripción</th><th>Duración</th><th>Buffer</th><th>Costo</th><th>Estado</th><th>Acciones</th></tr>
+        </thead>
+        <tbody>
+          {% for s in servicios %}
+          <tr>
+            <td class="fw-semibold">{{ s.nombre }}</td>
+            <td class="text-muted small">{{ s.descripcion or '—' }}</td>
+            <td>{{ s.duracion }} min</td>
+            <td>{{ s.buffer_limpieza }} min</td>
+            <td class="fw-bold text-success">S/ {{ "%.2f"|format(s.costo) }}</td>
+            <td>
+              {% if s.estado == 'activo' %}<span class="badge bg-success">Activo</span>
+              {% else %}<span class="badge bg-secondary">Inactivo</span>{% endif %}
+            </td>
+            <td>
+              <button class="btn btn-sm btn-outline-primary me-1" data-bs-toggle="modal"
+                      data-bs-target="#modalEditar{{ s.id }}"><i class="bi bi-pencil-fill"></i></button>
+              <form method="POST" action="{{ url_for('admin_eliminar_servicio', sid=s.id) }}"
+                    class="d-inline" onsubmit="return confirm('¿Desactivar este servicio?')">
+                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash-fill"></i></button>
+              </form>
+            </td>
+          </tr>
+          <!-- Modal editar -->
+          <div class="modal fade" id="modalEditar{{ s.id }}" tabindex="-1">
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <form method="POST" action="{{ url_for('admin_editar_servicio', sid=s.id) }}">
+                  <div class="modal-header"><h5 class="modal-title">Editar Servicio</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                  <div class="modal-body row g-3">
+                    <div class="col-12">
+                      <label class="form-label fw-semibold">Nombre *</label>
+                      <input type="text" name="nombre" class="form-control" value="{{ s.nombre }}" required>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label fw-semibold">Descripción</label>
+                      <textarea name="descripcion" class="form-control" rows="2">{{ s.descripcion or '' }}</textarea>
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label fw-semibold">Duración (min) *</label>
+                      <input type="number" name="duracion" class="form-control" value="{{ s.duracion }}" min="5" required>
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label fw-semibold">Buffer (min)</label>
+                      <input type="number" name="buffer" class="form-control" value="{{ s.buffer_limpieza }}" min="0">
+                    </div>
+                    <div class="col-md-4">
+                      <label class="form-label fw-semibold">Costo (S/) *</label>
+                      <input type="number" name="costo" class="form-control" value="{{ s.costo }}" step="0.01" min="0" required>
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label fw-semibold">Estado</label>
+                      <select name="estado" class="form-select">
+                        <option value="activo" {% if s.estado=='activo' %}selected{% endif %}>Activo</option>
+                        <option value="inactivo" {% if s.estado=='inactivo' %}selected{% endif %}>Inactivo</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+          {% else %}
+          <tr><td colspan="7" class="text-center text-muted py-4">No hay servicios registrados.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal crear -->
+<div class="modal fade" id="modalCrear" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('admin_crear_servicio') }}">
+        <div class="modal-header"><h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Nuevo Servicio</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body row g-3">
+          <div class="col-12">
+            <label class="form-label fw-semibold">Nombre *</label>
+            <input type="text" name="nombre" class="form-control" required placeholder="Ej: Limpieza dental">
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Descripción</label>
+            <textarea name="descripcion" class="form-control" rows="2" placeholder="Descripción breve..."></textarea>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Duración (min) *</label>
+            <input type="number" name="duracion" class="form-control" min="5" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Buffer (min)</label>
+            <input type="number" name="buffer" class="form-control" value="0" min="0">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Costo (S/) *</label>
+            <input type="number" name="costo" class="form-control" step="0.01" min="0" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success"><i class="bi bi-save me-2"></i>Registrar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% block title %}Gestionar Horarios{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="fw-bold mb-0"><i class="bi bi-calendar3 me-2 text-secondary"></i>Gestionar Horarios de Doctores</h2>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-5">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white fw-bold">Seleccionar Doctor</div>
+      <div class="card-body">
+        <select id="sel-doctor" class="form-select mb-3" onchange="cargarHorarios()">
+          <option value="">— Seleccione un doctor —</option>
+          {% for d in doctores %}
+          <option value="{{ d.id }}">{{ d.nombres }} {{ d.apellidos }} {% if d.especialidad %}({{ d.especialidad }}){% endif %}</option>
+          {% endfor %}
+        </select>
+        <div id="info-doctor" class="d-none">
+          <div id="horarios-lista"></div>
+          <hr>
+          <button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#modalCrearHorario">
+            <i class="bi bi-plus-circle me-2"></i>Agregar Horario
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-7">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white fw-bold">Calendario Semanal</div>
+      <div class="card-body p-0">
+        <div id="calendario" class="p-3">
+          <p class="text-muted text-center py-4">Selecciona un doctor para ver su horario.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal crear horario -->
+<div class="modal fade" id="modalCrearHorario" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="POST" action="{{ url_for('admin_crear_horario') }}">
+        <input type="hidden" name="doctor_id" id="modal-doctor-id">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-clock-history me-2"></i>Nuevo Horario</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body row g-3">
+          <div class="col-12">
+            <label class="form-label fw-semibold">Día *</label>
+            <select name="dia" class="form-select" required>
+              {% for d in ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'] %}
+              <option>{{ d }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Hora inicio *</label>
+            <input type="time" name="hora_inicio" class="form-control" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Hora fin *</label>
+            <input type="time" name="hora_fin" class="form-control" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-save me-2"></i>Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const DIAS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+function cargarHorarios() {
+  const did = document.getElementById('sel-doctor').value;
+  if (!did) { document.getElementById('info-doctor').classList.add('d-none'); return; }
+  document.getElementById('modal-doctor-id').value = did;
+
+  fetch('/admin/horarios/' + did)
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('info-doctor').classList.remove('d-none');
+      renderLista(data.horarios);
+      renderCalendario(data.horarios);
+    });
+}
+
+function renderLista(horarios) {
+  const el = document.getElementById('horarios-lista');
+  if (!horarios.length) { el.innerHTML = '<p class="text-muted small">Sin horarios registrados.</p>'; return; }
+  el.innerHTML = '<h6 class="fw-bold mb-2">Horarios registrados</h6>' +
+    horarios.map(h => `
+      <div class="d-flex justify-content-between align-items-center border rounded p-2 mb-1">
+        <span><span class="badge bg-secondary me-2">${h.dia}</span>${h.hora_inicio} – ${h.hora_fin}</span>
+        <form method="POST" action="/admin/horarios/${h.id}/eliminar" onsubmit="return confirm('¿Eliminar este horario?')">
+          <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash-fill"></i></button>
+        </form>
+      </div>`).join('');
+}
+
+function renderCalendario(horarios) {
+  const cal = document.getElementById('calendario');
+  const byDia = {};
+  DIAS.forEach(d => byDia[d] = []);
+  horarios.forEach(h => { if (byDia[h.dia]) byDia[h.dia].push(h); });
+
+  cal.innerHTML = `<div class="row g-1">` +
+    DIAS.map(dia => `
+      <div class="col">
+        <div class="text-center fw-bold small border-bottom pb-1 mb-1">${dia.substring(0,3)}</div>
+        ${byDia[dia].map(h => `
+          <div class="bg-primary text-white rounded p-1 mb-1 text-center" style="font-size:0.7rem">
+            ${h.hora_inicio}<br>${h.hora_fin}
+          </div>`).join('') || '<div class="text-muted text-center" style="font-size:0.7rem">—</div>'}
+      </div>`).join('') + `</div>`;
+}
+</script>
+{% endblock %}

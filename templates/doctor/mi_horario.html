@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}Mi Horario{% endblock %}
+{% block content %}
+<h2 class="fw-bold mb-4"><i class="bi bi-calendar3 me-2 text-primary"></i>Mi Horario</h2>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white fw-bold"><i class="bi bi-clock-history me-2 text-primary"></i>Horarios de Atención</div>
+      <div class="card-body">
+        {% if horarios %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Día</th>
+                <th>Hora inicio</th>
+                <th>Hora fin</th>
+                <th>Duración</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for dia in dias_orden %}
+                {% set turnos = horarios|selectattr('dia','equalto',dia)|list %}
+                {% for h in turnos %}
+                <tr>
+                  {% if loop.first %}
+                  <td rowspan="{{ turnos|length }}" class="fw-semibold align-middle">
+                    <i class="bi bi-calendar-day me-2 text-primary"></i>{{ dia }}
+                  </td>
+                  {% endif %}
+                  <td><span class="badge bg-light text-dark border">{{ h.hora_inicio }}</span></td>
+                  <td><span class="badge bg-light text-dark border">{{ h.hora_fin }}</span></td>
+                  <td class="text-muted small">
+                    {% set h_ini = h.hora_inicio.split(':') %}
+                    {% set h_fin = h.hora_fin.split(':') %}
+                    {% set mins = (h_fin[0]|int * 60 + h_fin[1]|int) - (h_ini[0]|int * 60 + h_ini[1]|int) %}
+                    {{ mins // 60 }}h {{ mins % 60 }}min
+                  </td>
+                </tr>
+                {% endfor %}
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">
+          <i class="bi bi-calendar-x" style="font-size:2.5rem"></i>
+          <p class="mt-2">No tienes horarios registrados. Contacta al administrador.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white fw-bold"><i class="bi bi-clipboard2-pulse me-2 text-success"></i>Mis Servicios</div>
+      <div class="card-body">
+        {% if servicios %}
+        <ul class="list-group list-group-flush">
+          {% for s in servicios %}
+          <li class="list-group-item px-0">
+            <i class="bi bi-check-circle-fill text-success me-2"></i>{{ s.nombre }}
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-muted text-center py-3">No tienes servicios asignados.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mt-3">
+      <div class="card-body text-center text-muted py-4">
+        <i class="bi bi-info-circle" style="font-size:2rem"></i>
+        <p class="mt-2 mb-0 small">Para modificar tu horario o servicios, contacta al administrador.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}Citas{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="fw-bold mb-0"><i class="bi bi-calendar-check me-2 text-primary"></i>Citas</h2>
+  {% if session.rol in ['recepcionista','administrador'] %}
+  <a href="{{ url_for('crear_cita') }}" class="btn btn-primary">
+    <i class="bi bi-calendar-plus me-2"></i>Nueva Cita
+  </a>
+  {% endif %}
+</div>
+
+<!-- Filtros -->
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body">
+    <form method="GET" class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <input type="text" name="q" class="form-control" placeholder="Código, DNI o nombre..." value="{{ q }}">
+      </div>
+      <div class="col-md-3">
+        <input type="date" name="fecha" class="form-control" value="{{ fecha }}">
+      </div>
+      <div class="col-md-2">
+        <select name="estado" class="form-select">
+          <option value="">Todos</option>
+          {% for e in ['confirmada','atendida','cancelada','no_asistio','pagada'] %}
+          <option value="{{ e }}" {% if estado==e %}selected{% endif %}>{{ e|replace('_',' ')|title }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-primary flex-fill"><i class="bi bi-search me-1"></i>Buscar</button>
+        <a href="{{ url_for('citas') }}" class="btn btn-outline-secondary">Limpiar</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Tarjetas de citas -->
+{% if citas %}
+<div class="row g-3">
+  {% for c in citas %}
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100 shadow-sm border-0 border-start border-4
+      {% if c.estado=='confirmada' %}border-primary
+      {% elif c.estado=='atendida' %}border-success
+      {% elif c.estado=='pagada' %}border-info
+      {% elif c.estado=='cancelada' %}border-danger
+      {% else %}border-warning{% endif %}">
+      <div class="card-body">
+        <div class="d-flex justify-content-between mb-2">
+          <span class="fw-bold"><code>{{ c.codigo }}</code></span>
+          <span class="badge bg-{{ {'confirmada':'primary','atendida':'success','cancelada':'danger','no_asistio':'warning','pagada':'info'}.get(c.estado,'secondary') }}">
+            {{ c.estado|replace('_',' ')|title }}
+          </span>
+        </div>
+        <p class="mb-1"><i class="bi bi-person-fill text-muted me-2"></i><strong>{{ c.paciente }}</strong> <small class="text-muted">({{ c.paciente_dni }})</small></p>
+        <p class="mb-1"><i class="bi bi-person-badge text-muted me-2"></i>Dr. {{ c.doctor }}</p>
+        <p class="mb-1"><i class="bi bi-clipboard2-pulse text-muted me-2"></i>{{ c.servicio }}</p>
+        <p class="mb-1"><i class="bi bi-calendar3 text-muted me-2"></i>{{ c.fecha }} <strong>{{ c.hora }}</strong></p>
+        <p class="mb-2"><i class="bi bi-cash text-muted me-2"></i>S/ {{ "%.2f"|format(c.monto) }}</p>
+
+        {% if c.estado == 'confirmada' and session.rol in ['recepcionista','administrador'] %}
+        <div class="d-flex gap-1 mt-2">
+          <a href="{{ url_for('reprogramar_cita', cid=c.id) }}" class="btn btn-sm btn-outline-warning flex-fill">
+            <i class="bi bi-calendar-week"></i> Reprogramar
+          </a>
+          <form method="POST" action="{{ url_for('cancelar_cita', cid=c.id) }}"
+                onsubmit="return confirm('¿Cancelar esta cita?')">
+            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-x-circle"></i> Cancelar</button>
+          </form>
+        </div>
+        {% endif %}
+        {% if c.estado == 'confirmada' and session.rol in ['cajero','administrador'] %}
+        <a href="{{ url_for('cajero_pago') }}?q={{ c.codigo }}" class="btn btn-sm btn-success w-100 mt-2">
+          <i class="bi bi-cash-coin me-1"></i>Registrar Pago
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-calendar-x" style="font-size:3rem"></i>
+  <p class="mt-2">No se encontraron citas con los filtros aplicados.</p>
+</div>
+{% endif %}
+{% endblock %}

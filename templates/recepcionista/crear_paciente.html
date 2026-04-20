@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Registrar Paciente{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+  <a href="{{ url_for('pacientes') }}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
+  <h2 class="fw-bold mb-0"><i class="bi bi-person-plus-fill me-2 text-primary"></i>Registrar Paciente</h2>
+</div>
+<div class="card shadow-sm border-0" style="max-width:650px">
+  <div class="card-body p-4">
+    <form method="POST">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">DNI *</label>
+          <input type="text" name="dni" class="form-control" maxlength="8" pattern="\d{8}" required placeholder="12345678">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Sexo</label>
+          <select name="sexo" class="form-select">
+            <option value="">Seleccione</option>
+            <option value="M">Masculino</option>
+            <option value="F">Femenino</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">F. Nacimiento</label>
+          <input type="date" name="fecha_nacimiento" class="form-control">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Nombres *</label>
+          <input type="text" name="nombres" class="form-control" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Apellidos *</label>
+          <input type="text" name="apellidos" class="form-control" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Teléfono</label>
+          <input type="text" name="telefono" class="form-control" placeholder="9XXXXXXXX">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Correo</label>
+          <input type="email" name="correo" class="form-control">
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-semibold">Dirección</label>
+          <input type="text" name="direccion" class="form-control">
+        </div>
+      </div>
+      <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-2"></i>Guardar</button>
+        <a href="{{ url_for('pacientes') }}" class="btn btn-outline-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

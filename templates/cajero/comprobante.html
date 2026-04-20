@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}Comprobante de Pago{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 no-print">
+  <h2 class="fw-bold mb-0"><i class="bi bi-receipt me-2 text-success"></i>Comprobante de Pago</h2>
+  <div class="d-flex gap-2">
+    <button onclick="window.print()" class="btn btn-primary">
+      <i class="bi bi-printer me-2"></i>Imprimir
+    </button>
+    <a href="{{ url_for('cajero_pago') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-2"></i>Nuevo pago
+    </a>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mx-auto" style="max-width:500px" id="comprobante">
+  <div class="card-body p-4">
+    <div class="text-center mb-4">
+      <h4 class="fw-bold text-primary">Clínica Dental Padre Pío</h4>
+      <p class="text-muted mb-0">Trujillo, Perú</p>
+      <hr>
+      <h5 class="fw-bold">{{ comp|upper }}</h5>
+      <p class="text-muted small">Fecha: {{ fecha_pago }}</p>
+    </div>
+
+    <table class="table table-sm mb-4">
+      <tr><th class="text-muted">Código cita</th><td class="fw-bold"><code>{{ cita.codigo }}</code></td></tr>
+      <tr><th class="text-muted">Paciente</th><td>{{ cita.paciente }}</td></tr>
+      <tr><th class="text-muted">Doctor</th><td>{{ cita.doctor }}</td></tr>
+      <tr><th class="text-muted">Servicio</th><td>{{ cita.servicio }}</td></tr>
+      <tr><th class="text-muted">Fecha cita</th><td>{{ cita.fecha }} {{ cita.hora }}</td></tr>
+    </table>
+
+    <div class="bg-light rounded p-3 mb-3">
+      <div class="d-flex justify-content-between">
+        <span>Subtotal:</span><span>S/ {{ "%.2f"|format(monto) }}</span>
+      </div>
+      <div class="d-flex justify-content-between">
+        <span>Método de pago:</span><span class="text-capitalize">{{ metodo }}</span>
+      </div>
+      {% if num_op %}<div class="d-flex justify-content-between">
+        <span>N° operación:</span><span><code>{{ num_op }}</code></span>
+      </div>{% endif %}
+      {% if cambio > 0 %}<div class="d-flex justify-content-between">
+        <span>Cambio:</span><span>S/ {{ "%.2f"|format(cambio) }}</span>
+      </div>{% endif %}
+      <hr>
+      <div class="d-flex justify-content-between fw-bold fs-5">
+        <span>TOTAL:</span><span class="text-success">S/ {{ "%.2f"|format(monto) }}</span>
+      </div>
+    </div>
+
+    <div class="text-center text-muted small">
+      <p class="mb-0">¡Gracias por su visita!</p>
+      <p class="mb-0">Cuide su salud dental 😊</p>
+    </div>
+  </div>
+</div>
+
+<style>
+@media print {
+  .no-print, nav, .alert { display: none !important; }
+  #comprobante { box-shadow: none !important; max-width: 100% !important; }
+}
+</style>
+{% endblock %}

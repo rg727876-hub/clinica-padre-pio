@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}Consultar Horarios{% endblock %}
+{% block content %}
+<h2 class="fw-bold mb-4"><i class="bi bi-clock me-2 text-secondary"></i>Consultar Horarios de Doctores</h2>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-5">
+        <label class="form-label fw-semibold">Servicio</label>
+        <select id="sel-servicio" class="form-select" onchange="cargarDoctores()">
+          <option value="">— Seleccione servicio —</option>
+          {% for s in servicios %}
+          <option value="{{ s.id }}">{{ s.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-5">
+        <label class="form-label fw-semibold">Doctor</label>
+        <select id="sel-doctor" class="form-select" onchange="cargarHorarios()" disabled>
+          <option value="">— Seleccione doctor —</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0" id="card-horario" style="display:none">
+  <div class="card-header bg-white fw-bold">
+    <i class="bi bi-calendar3 me-2"></i>Disponibilidad semanal
+    <span class="ms-3">
+      <span class="badge bg-success me-1">● Disponible</span>
+      <span class="badge bg-danger">● Ocupado</span>
+    </span>
+  </div>
+  <div class="card-body" id="calendario"></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const DIAS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+function cargarDoctores() {
+  const sid = document.getElementById('sel-servicio').value;
+  const selDoc = document.getElementById('sel-doctor');
+  selDoc.innerHTML = '<option value="">Cargando...</option>';
+  selDoc.disabled = true;
+  document.getElementById('card-horario').style.display = 'none';
+  if (!sid) return;
+  fetch('/api/doctores/' + sid)
+    .then(r => r.json())
+    .then(docs => {
+      selDoc.innerHTML = '<option value="">— Seleccione doctor —</option>' +
+        docs.map(d => `<option value="${d.id}">${d.nombre}</option>`).join('');
+      selDoc.disabled = docs.length === 0;
+      if (!docs.length) selDoc.innerHTML = '<option>Sin doctores para este servicio</option>';
+    });
+}
+
+function cargarHorarios() {
+  const did = document.getElementById('sel-doctor').value;
+  if (!did) return;
+  fetch('/api/horarios/' + did)
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('card-horario').style.display = '';
+      const byDia = {};
+      DIAS.forEach(d => byDia[d] = []);
+      data.horarios.forEach(h => { if (byDia[h.dia]) byDia[h.dia].push(h); });
+
+      const cal = document.getElementById('calendario');
+      cal.innerHTML = `<div class="row g-2">` +
+        DIAS.map(dia => `
+          <div class="col">
+            <div class="text-center fw-bold border-bottom pb-1 mb-2">${dia}</div>
+            ${byDia[dia].length
+              ? byDia[dia].map(h => `<div class="bg-success text-white rounded p-2 mb-1 text-center small">${h.hora_inicio}<br>${h.hora_fin}</div>`).join('')
+              : '<div class="text-muted text-center small py-2">Sin horario</div>'}
+          </div>`).join('') + `</div>`;
+    });
+}
+</script>
+{% endblock %}

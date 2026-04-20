@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title %}Crear Usuario{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+  <a href="{{ url_for('admin_usuarios') }}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
+  <h2 class="fw-bold mb-0"><i class="bi bi-person-plus-fill me-2 text-primary"></i>Crear Usuario</h2>
+</div>
+
+<div class="card shadow-sm border-0" style="max-width:700px">
+  <div class="card-body p-4">
+    <form method="POST" id="form-usuario">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">DNI *</label>
+          <input type="text" name="dni" class="form-control" maxlength="8" pattern="\d{8}" required placeholder="12345678">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Rol *</label>
+          <select name="rol" id="select-rol" class="form-select" required onchange="toggleDoctor()">
+            <option value="">Seleccione...</option>
+            <option value="administrador">Administrador</option>
+            <option value="recepcionista">Recepcionista</option>
+            <option value="doctor">Doctor</option>
+            <option value="cajero">Cajero</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Nombres *</label>
+          <input type="text" name="nombres" class="form-control" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Apellidos *</label>
+          <input type="text" name="apellidos" class="form-control" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Correo *</label>
+          <input type="email" name="correo" class="form-control" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Teléfono</label>
+          <input type="text" name="telefono" class="form-control" placeholder="9XXXXXXXX">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Contraseña *</label>
+          <input type="password" name="contrasena" class="form-control" required minlength="6">
+        </div>
+
+        <!-- Solo para doctores -->
+        <div class="col-md-6 doctor-field d-none">
+          <label class="form-label fw-semibold">Especialidad</label>
+          <input type="text" name="especialidad" class="form-control" placeholder="Ej: Ortodoncia">
+        </div>
+        <div class="col-12 doctor-field d-none">
+          <label class="form-label fw-semibold">Servicios que realiza</label>
+          <div class="row g-2">
+            {% for s in servicios %}
+            <div class="col-md-4">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="servicios" value="{{ s.id }}" id="srv{{ s.id }}">
+                <label class="form-check-label" for="srv{{ s.id }}">{{ s.nombre }}</label>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-2"></i>Registrar</button>
+        <a href="{{ url_for('admin_usuarios') }}" class="btn btn-outline-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function toggleDoctor() {
+  const rol = document.getElementById('select-rol').value;
+  document.querySelectorAll('.doctor-field').forEach(el => {
+    el.classList.toggle('d-none', rol !== 'doctor');
+  });
+}
+</script>
+{% endblock %}

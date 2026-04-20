@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Editar Paciente{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+  <a href="{{ url_for('pacientes') }}" class="btn btn-outline-secondary me-3"><i class="bi bi-arrow-left"></i></a>
+  <h2 class="fw-bold mb-0"><i class="bi bi-pencil-fill me-2 text-primary"></i>Actualizar Datos del Paciente</h2>
+</div>
+<div class="card shadow-sm border-0" style="max-width:650px">
+  <div class="card-body p-4">
+    <div class="alert alert-info mb-3">
+      <i class="bi bi-info-circle me-2"></i>El DNI y nombre no pueden modificarse.
+    </div>
+    <form method="POST">
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">DNI</label>
+          <input type="text" class="form-control bg-light" value="{{ paciente.dni }}" disabled>
+        </div>
+        <div class="col-md-8">
+          <label class="form-label fw-semibold">Nombre completo</label>
+          <input type="text" class="form-control bg-light" value="{{ paciente.nombres }} {{ paciente.apellidos }}" disabled>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Teléfono</label>
+          <input type="text" name="telefono" class="form-control" value="{{ paciente.telefono or '' }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Correo</label>
+          <input type="email" name="correo" class="form-control" value="{{ paciente.correo or '' }}">
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-semibold">Dirección</label>
+          <input type="text" name="direccion" class="form-control" value="{{ paciente.direccion or '' }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">F. Nacimiento</label>
+          <input type="date" name="fecha_nacimiento" class="form-control" value="{{ paciente.fecha_nacimiento or '' }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Sexo</label>
+          <select name="sexo" class="form-select">
+            <option value="">Seleccione</option>
+            <option value="M" {% if paciente.sexo=='M' %}selected{% endif %}>Masculino</option>
+            <option value="F" {% if paciente.sexo=='F' %}selected{% endif %}>Femenino</option>
+          </select>
+        </div>
+      </div>
+      <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-2"></i>Modificar</button>
+        <a href="{{ url_for('pacientes') }}" class="btn btn-outline-secondary">Cancelar</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

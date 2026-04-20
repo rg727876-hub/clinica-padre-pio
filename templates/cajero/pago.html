@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% block title %}Registrar Pago{% endblock %}
+{% block content %}
+<h2 class="fw-bold mb-4"><i class="bi bi-cash-coin me-2 text-success"></i>Registrar Pago</h2>
+
+<!-- Buscar cita -->
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body">
+    <form method="GET" class="d-flex gap-2">
+      <input type="text" name="q" class="form-control" value="{{ q }}"
+             placeholder="Ingrese código de cita (C-XXXXXX) o DNI del paciente..." required>
+      <button type="submit" class="btn btn-primary px-4"><i class="bi bi-search me-1"></i>Buscar</button>
+    </form>
+  </div>
+</div>
+
+{% if cita %}
+<!-- Detalle de la cita -->
+<div class="row g-4">
+  <div class="col-md-5">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white fw-bold"><i class="bi bi-clipboard2-check me-2"></i>Detalle de la cita</div>
+      <div class="card-body">
+        <table class="table table-sm mb-0">
+          <tr><th class="text-muted">Código</th><td><code>{{ cita.codigo }}</code></td></tr>
+          <tr><th class="text-muted">Paciente</th><td class="fw-bold">{{ cita.paciente }}</td></tr>
+          <tr><th class="text-muted">Doctor</th><td>{{ cita.doctor }}</td></tr>
+          <tr><th class="text-muted">Servicio</th><td>{{ cita.servicio }}</td></tr>
+          <tr><th class="text-muted">Fecha</th><td>{{ cita.fecha }}</td></tr>
+          <tr><th class="text-muted">Hora</th><td>{{ cita.hora }}</td></tr>
+          <tr><th class="text-muted">Monto</th><td class="fw-bold text-success fs-5">S/ {{ "%.2f"|format(cita.monto) }}</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-7">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white fw-bold"><i class="bi bi-credit-card-fill me-2"></i>Datos del pago</div>
+      <div class="card-body">
+        <form method="POST">
+          <input type="hidden" name="cita_id" value="{{ cita.id }}">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Método de pago *</label>
+            <select name="metodo_pago" id="metodo" class="form-select" required onchange="toggleMetodo()">
+              <option value="efectivo">💵 Efectivo</option>
+              <option value="tarjeta">💳 Tarjeta</option>
+              <option value="yape">📱 Yape</option>
+              <option value="plin">📱 Plin</option>
+              <option value="transferencia">🏦 Transferencia</option>
+            </select>
+          </div>
+
+          <!-- Efectivo -->
+          <div id="campo-efectivo" class="mb-3">
+            <label class="form-label fw-semibold">Monto recibido (S/) *</label>
+            <input type="number" name="monto_recibido" id="monto-recibido" class="form-control"
+                   step="0.01" min="{{ cita.monto }}" value="{{ cita.monto }}"
+                   oninput="calcularCambio()">
+            <div class="mt-2 p-2 bg-light rounded">
+              Cambio: <strong class="text-success fs-5" id="cambio-display">S/ 0.00</strong>
+              <input type="hidden" name="cambio" id="inp-cambio" value="0">
+            </div>
+          </div>
+
+          <!-- Tarjeta/Yape/Plin/Transferencia -->
+          <div id="campo-operacion" class="mb-3 d-none">
+            <label class="form-label fw-semibold">N° de operación *</label>
+            <input type="text" name="numero_operacion" class="form-control" placeholder="Ingrese número de operación">
+          </div>
+
+          <input type="hidden" name="monto" value="{{ cita.monto }}">
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Tipo de comprobante</label>
+            <select name="comprobante_tipo" class="form-select">
+              <option value="boleta">Boleta</option>
+              <option value="factura">Factura</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-success btn-lg w-100 fw-bold"
+                  onclick="return confirm('¿Confirmar pago de S/ {{ "%.2f"|format(cita.monto) }}?')">
+            <i class="bi bi-check-circle-fill me-2"></i>Registrar Pago
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% elif q %}
+<div class="alert alert-warning">
+  <i class="bi bi-exclamation-triangle me-2"></i>
+  No se encontró ninguna cita <strong>pendiente de pago</strong> con el código/DNI: <strong>{{ q }}</strong>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script>
+const montoBase = {{ cita.monto if cita else 0 }};
+
+function toggleMetodo() {
+  const m = document.getElementById('metodo').value;
+  document.getElementById('campo-efectivo').classList.toggle('d-none', m !== 'efectivo');
+  document.getElementById('campo-operacion').classList.toggle('d-none', m === 'efectivo');
+}
+
+function calcularCambio() {
+  const recibido = parseFloat(document.getElementById('monto-recibido').value) || 0;
+  const cambio = Math.max(0, recibido - montoBase);
+  document.getElementById('cambio-display').textContent = 'S/ ' + cambio.toFixed(2);
+  document.getElementById('inp-cambio').value = cambio.toFixed(2);
+}
+</script>
+{% endblock %}

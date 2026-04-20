@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block title %}Historial — {{ paciente.nombres }} {{ paciente.apellidos }}{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center gap-3 mb-4">
+  <a href="{{ url_for('doctor_citas') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Volver
+  </a>
+  <h2 class="fw-bold mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Historial del Paciente</h2>
+</div>
+
+<!-- Datos del paciente -->
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <h5 class="fw-bold mb-1">
+          <i class="bi bi-person-fill me-2 text-primary"></i>{{ paciente.nombres }} {{ paciente.apellidos }}
+        </h5>
+        <p class="text-muted mb-0 small"><i class="bi bi-credit-card me-2"></i>DNI: {{ paciente.dni }}</p>
+      </div>
+      <div class="col-md-3">
+        {% if paciente.fecha_nacimiento %}
+        <p class="mb-1 small"><span class="fw-semibold">Nacimiento:</span> {{ paciente.fecha_nacimiento }}</p>
+        {% endif %}
+        {% if paciente.sexo %}
+        <p class="mb-1 small"><span class="fw-semibold">Sexo:</span> {{ 'Masculino' if paciente.sexo == 'M' else 'Femenino' }}</p>
+        {% endif %}
+      </div>
+      <div class="col-md-3">
+        {% if paciente.telefono %}
+        <p class="mb-1 small"><i class="bi bi-telephone me-2 text-muted"></i>{{ paciente.telefono }}</p>
+        {% endif %}
+        {% if paciente.correo %}
+        <p class="mb-1 small"><i class="bi bi-envelope me-2 text-muted"></i>{{ paciente.correo }}</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Historial de citas -->
+<h5 class="fw-bold mb-3">Citas con este paciente</h5>
+{% if citas %}
+<div class="row g-3">
+  {% for c in citas %}
+  <div class="col-md-6">
+    <div class="card shadow-sm border-0 border-start border-4
+      {% if c.estado=='atendida' %}border-success
+      {% elif c.estado=='pagada' %}border-info
+      {% elif c.estado=='confirmada' %}border-primary
+      {% elif c.estado=='no_asistio' %}border-warning
+      {% else %}border-danger{% endif %}">
+      <div class="card-body">
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted small"><i class="bi bi-calendar3 me-1"></i>{{ c.fecha }} {{ c.hora }}</span>
+          <span class="badge bg-{{ {'confirmada':'primary','atendida':'success','cancelada':'danger','no_asistio':'warning','pagada':'info'}.get(c.estado,'secondary') }}">
+            {{ c.estado|replace('_',' ')|title }}
+          </span>
+        </div>
+        <p class="mb-1 fw-semibold"><i class="bi bi-clipboard2-pulse me-2 text-success"></i>{{ c.servicio }}</p>
+        <p class="mb-1 text-muted small"><i class="bi bi-hash me-2"></i>{{ c.codigo }}</p>
+        <p class="mb-2"><i class="bi bi-cash me-2 text-success"></i>S/ {{ "%.2f"|format(c.monto) }}</p>
+        {% if c.observaciones %}
+        <div class="alert alert-light border py-2 px-3 mb-0 small">
+          <i class="bi bi-chat-square-text me-2 text-primary"></i>
+          <strong>Observaciones:</strong> {{ c.observaciones }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-calendar-x" style="font-size:3rem"></i>
+  <p class="mt-2">No hay citas registradas con este paciente.</p>
+</div>
+{% endif %}
+{% endblock %}

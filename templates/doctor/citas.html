@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+{% block title %}Mis Citas{% endblock %}
+{% block content %}
+<h2 class="fw-bold mb-4"><i class="bi bi-calendar-check me-2 text-primary"></i>Mis Citas</h2>
+
+<!-- Filtros -->
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body">
+    <form method="GET" class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label fw-semibold">Fecha</label>
+        <input type="date" name="fecha" class="form-control" value="{{ fecha }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold">Estado</label>
+        <select name="estado" class="form-select">
+          <option value="">Todos</option>
+          {% for e in ['confirmada','atendida','no_asistio','cancelada','pagada'] %}
+          <option value="{{ e }}" {% if estado==e %}selected{% endif %}>{{ e|replace('_',' ')|title }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-primary flex-fill"><i class="bi bi-search me-1"></i>Filtrar</button>
+        <a href="{{ url_for('doctor_citas') }}" class="btn btn-outline-secondary">Hoy</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if citas %}
+<div class="row g-3">
+  {% for c in citas %}
+  <div class="col-md-6">
+    <div class="card shadow-sm border-0 h-100 border-start border-4
+      {% if c.estado=='confirmada' %}border-primary
+      {% elif c.estado=='atendida' %}border-success
+      {% elif c.estado=='pagada' %}border-info
+      {% elif c.estado=='no_asistio' %}border-warning
+      {% else %}border-danger{% endif %}">
+      <div class="card-body">
+        <div class="d-flex justify-content-between mb-2">
+          <span class="fw-bold fs-5"><i class="bi bi-clock me-1 text-muted"></i>{{ c.hora }}</span>
+          <span class="badge fs-6 bg-{{ {'confirmada':'primary','atendida':'success','cancelada':'danger','no_asistio':'warning','pagada':'info'}.get(c.estado,'secondary') }}">
+            {{ c.estado|replace('_',' ')|title }}
+          </span>
+        </div>
+        <div class="d-flex justify-content-between align-items-start mb-1">
+          <p class="mb-0 fw-bold"><i class="bi bi-person-fill me-2 text-primary"></i>{{ c.paciente }}</p>
+          <a href="{{ url_for('doctor_historial_paciente', pid=c.paciente_id) }}" class="btn btn-sm btn-outline-secondary" title="Ver historial">
+            <i class="bi bi-clock-history"></i>
+          </a>
+        </div>
+        <p class="mb-1 text-muted small"><i class="bi bi-credit-card me-2"></i>DNI: {{ c.paciente_dni }}</p>
+        {% if c.telefono %}<p class="mb-1 text-muted small"><i class="bi bi-telephone me-2"></i>{{ c.telefono }}</p>{% endif %}
+        <p class="mb-1"><i class="bi bi-clipboard2-pulse me-2 text-success"></i>{{ c.servicio }}</p>
+        <p class="mb-1 text-muted small"><i class="bi bi-calendar3 me-2"></i>{{ c.fecha }}</p>
+        <p class="mb-2"><i class="bi bi-cash me-2 text-success"></i>S/ {{ "%.2f"|format(c.monto) }}</p>
+
+        {% if c.observaciones %}
+        <p class="mb-2 text-muted small fst-italic"><i class="bi bi-chat-square-text me-2"></i>{{ c.observaciones }}</p>
+        {% endif %}
+
+        {% if c.estado == 'confirmada' %}
+        <div class="d-flex gap-2 mt-2">
+          <!-- Botón Asistió abre modal -->
+          <button type="button" class="btn btn-success flex-fill"
+            data-bs-toggle="modal" data-bs-target="#modalAsistencia"
+            data-cid="{{ c.id }}" data-paciente="{{ c.paciente }}">
+            <i class="bi bi-check-circle me-1"></i>Asistió
+          </button>
+          <form method="POST" action="{{ url_for('doctor_asistencia', cid=c.id) }}" class="flex-fill">
+            <input type="hidden" name="estado" value="no_asistio">
+            <button type="submit" class="btn btn-outline-warning w-100" onclick="return confirm('¿Marcar como no asistió?')">
+              <i class="bi bi-x-circle me-1"></i>No asistió
+            </button>
+          </form>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-5 text-muted">
+  <i class="bi bi-calendar-x" style="font-size:3rem"></i>
+  <p class="mt-2">No tienes citas para esta fecha/filtro.</p>
+</div>
+{% endif %}
+
+<!-- Modal Observaciones -->
+<div class="modal fade" id="modalAsistencia" tabindex="-1">
+  <div class="modal-dialog">
+    <form method="POST" id="formAsistencia">
+      <input type="hidden" name="estado" value="atendida">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-check-circle-fill text-success me-2"></i>Registrar Atención</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-3">Paciente: <strong id="modalPacienteNombre"></strong></p>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Observaciones clínicas <span class="text-muted fw-normal">(opcional)</span></label>
+            <textarea name="observaciones" class="form-control" rows="4"
+              placeholder="Ej: Tratamiento realizado sin complicaciones. Se indicó..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success"><i class="bi bi-check-circle me-1"></i>Confirmar Atención</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const modalEl = document.getElementById('modalAsistencia');
+  modalEl.addEventListener('show.bs.modal', function(e) {
+    const btn = e.relatedTarget;
+    const cid = btn.getAttribute('data-cid');
+    const paciente = btn.getAttribute('data-paciente');
+    document.getElementById('modalPacienteNombre').textContent = paciente;
+    document.getElementById('formAsistencia').action = '/doctor/citas/' + cid + '/asistencia';
+    modalEl.querySelector('textarea[name="observaciones"]').value = '';
+  });
+</script>
+{% endblock %}
