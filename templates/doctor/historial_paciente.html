@@ -9,37 +9,135 @@
 </div>
 
 <!-- Datos del paciente -->
-<div class="card shadow-sm border-0 mb-4">
+<div class="card shadow-sm border-0 mb-3">
   <div class="card-body">
-    <div class="row g-3">
+    <div class="row g-3 align-items-center">
       <div class="col-md-6">
         <h5 class="fw-bold mb-1">
           <i class="bi bi-person-fill me-2 text-primary"></i>{{ paciente.nombres }} {{ paciente.apellidos }}
         </h5>
         <p class="text-muted mb-0 small"><i class="bi bi-credit-card me-2"></i>DNI: {{ paciente.dni }}</p>
       </div>
-      <div class="col-md-3">
+      <div class="col-md-4">
         {% if paciente.fecha_nacimiento %}
         <p class="mb-1 small"><span class="fw-semibold">Nacimiento:</span> {{ paciente.fecha_nacimiento }}</p>
         {% endif %}
         {% if paciente.sexo %}
         <p class="mb-1 small"><span class="fw-semibold">Sexo:</span> {{ 'Masculino' if paciente.sexo == 'M' else 'Femenino' }}</p>
         {% endif %}
+        {% if paciente.estado_civil %}
+        <p class="mb-1 small"><span class="fw-semibold">Estado civil:</span> {{ paciente.estado_civil }}</p>
+        {% endif %}
+        {% if paciente.ocupacion %}
+        <p class="mb-1 small"><span class="fw-semibold">Ocupación:</span> {{ paciente.ocupacion }}</p>
+        {% endif %}
       </div>
-      <div class="col-md-3">
-        {% if paciente.telefono %}
-        <p class="mb-1 small"><i class="bi bi-telephone me-2 text-muted"></i>{{ paciente.telefono }}</p>
-        {% endif %}
-        {% if paciente.correo %}
-        <p class="mb-1 small"><i class="bi bi-envelope me-2 text-muted"></i>{{ paciente.correo }}</p>
-        {% endif %}
+      <div class="col-md-2 text-md-end">
+        <a href="{{ url_for('doctor_historia_base', pid=paciente.id) }}" class="btn btn-outline-primary btn-sm">
+          <i class="bi bi-file-medical me-1"></i>
+          {{ 'Editar Anamnesis' if historia else 'Nueva Anamnesis' }}
+        </a>
       </div>
     </div>
   </div>
 </div>
 
+<!-- Historia Clínica Base (Anamnesis) -->
+{% if historia %}
+<div class="card shadow-sm border-0 mb-4 border-start border-4 border-info">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <span class="fw-bold"><i class="bi bi-file-medical me-2 text-info"></i>I. ANAMNESIS</span>
+    <a href="{{ url_for('doctor_historia_base', pid=paciente.id) }}" class="btn btn-sm btn-outline-info">
+      <i class="bi bi-pencil me-1"></i>Editar
+    </a>
+  </div>
+  <div class="card-body">
+    <div class="row g-3 small">
+      {% if historia.motivo_consulta %}
+      <div class="col-12">
+        <span class="fw-semibold text-muted">Motivo de consulta:</span>
+        <p class="mb-0 mt-1">{{ historia.motivo_consulta }}</p>
+      </div>
+      {% endif %}
+      {% if historia.enfermedad_inicio or historia.enfermedad_evolucion or historia.enfermedad_estado_actual %}
+      <div class="col-12">
+        <span class="fw-semibold text-muted">Enfermedad actual:</span>
+        {% if historia.enfermedad_inicio %}<p class="mb-1 mt-1"><em>Inicio:</em> {{ historia.enfermedad_inicio }}</p>{% endif %}
+        {% if historia.enfermedad_evolucion %}<p class="mb-1"><em>Evolución:</em> {{ historia.enfermedad_evolucion }}</p>{% endif %}
+        {% if historia.enfermedad_estado_actual %}<p class="mb-0"><em>Estado actual:</em> {{ historia.enfermedad_estado_actual }}</p>{% endif %}
+      </div>
+      {% endif %}
+      <div class="col-md-6">
+        <span class="fw-semibold text-muted">Antecedentes personales:</span>
+        {% if historia.antec_sistemicos %}<p class="mb-1 mt-1"><em>Sistémicos:</em> {{ historia.antec_sistemicos }}</p>{% endif %}
+        {% if historia.antec_estomatologico %}<p class="mb-1"><em>Estomatológico:</em> {{ historia.antec_estomatologico }}</p>{% endif %}
+        {% if historia.antec_farmacologicos %}<p class="mb-1"><em>Farmacológicos:</em> {{ historia.antec_farmacologicos }}</p>{% endif %}
+        {% if historia.antec_otros %}<p class="mb-0"><em>Otros:</em> {{ historia.antec_otros }}</p>{% endif %}
+      </div>
+      {% if historia.antec_familiares %}
+      <div class="col-md-6">
+        <span class="fw-semibold text-muted">Antecedentes familiares:</span>
+        <p class="mb-0 mt-1">{{ historia.antec_familiares }}</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="alert alert-warning d-flex align-items-center gap-2 mb-4">
+  <i class="bi bi-exclamation-triangle-fill"></i>
+  <span>Este paciente no tiene anamnesis registrada.
+    <a href="{{ url_for('doctor_historia_base', pid=paciente.id) }}" class="alert-link ms-1">Registrar ahora</a>
+  </span>
+</div>
+{% endif %}
+
+<!-- Fichas Clínicas por Consulta -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="fw-bold mb-0">Fichas Clínicas por Consulta</h5>
+</div>
+
+{% if consultas %}
+<div class="row g-3 mb-4">
+  {% for cc in consultas %}
+  <div class="col-12">
+    <div class="card shadow-sm border-0 border-start border-4 border-success">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+          <div>
+            <p class="fw-bold mb-1">
+              <i class="bi bi-calendar3 me-1 text-muted"></i>{{ cc.fecha }}
+              {% if cc.hora %}<span class="text-muted ms-1">{{ cc.hora }}</span>{% endif %}
+              {% if cc.servicio %}<span class="badge bg-secondary ms-2">{{ cc.servicio }}</span>{% endif %}
+            </p>
+            {% if cc.diagnostico_cie10 %}
+            <p class="mb-1 small"><span class="fw-semibold">CIE-10:</span> {{ cc.diagnostico_cie10 }}</p>
+            {% endif %}
+            {% if cc.diagnostico_presuntivo %}
+            <p class="mb-1 small"><span class="fw-semibold">Diagnóstico presuntivo:</span> {{ cc.diagnostico_presuntivo }}</p>
+            {% endif %}
+            {% if cc.tratamiento %}
+            <p class="mb-0 small"><span class="fw-semibold">Tratamiento:</span> {{ cc.tratamiento[:120] }}{% if cc.tratamiento|length > 120 %}…{% endif %}</p>
+            {% endif %}
+          </div>
+          <a href="{{ url_for('doctor_consulta', cid=cc.cita_id) }}" class="btn btn-sm btn-outline-success">
+            <i class="bi bi-pencil me-1"></i>Ver / Editar
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-3 text-muted mb-4">
+  <i class="bi bi-file-earmark-x" style="font-size:2rem"></i>
+  <p class="mt-2 mb-0">No hay fichas clínicas registradas aún.</p>
+</div>
+{% endif %}
+
 <!-- Historial de citas -->
-<h5 class="fw-bold mb-3">Citas con este paciente</h5>
+<h5 class="fw-bold mb-3">Todas las citas</h5>
 {% if citas %}
 <div class="row g-3">
   {% for c in citas %}
@@ -61,10 +159,18 @@
         <p class="mb-1 text-muted small"><i class="bi bi-hash me-2"></i>{{ c.codigo }}</p>
         <p class="mb-2"><i class="bi bi-cash me-2 text-success"></i>S/ {{ "%.2f"|format(c.monto) }}</p>
         {% if c.observaciones %}
-        <div class="alert alert-light border py-2 px-3 mb-0 small">
-          <i class="bi bi-chat-square-text me-2 text-primary"></i>
-          <strong>Observaciones:</strong> {{ c.observaciones }}
+        <div class="alert alert-light border py-2 px-3 mb-2 small">
+          <i class="bi bi-chat-square-text me-2 text-primary"></i>{{ c.observaciones }}
         </div>
+        {% endif %}
+        {% if c.estado in ('atendida', 'pagada') %}
+        <a href="{{ url_for('doctor_consulta', cid=c.id) }}" class="btn btn-sm btn-outline-success w-100">
+          <i class="bi bi-file-earmark-medical me-1"></i>Ficha Clínica
+        </a>
+        {% elif c.estado == 'confirmada' %}
+        <a href="{{ url_for('doctor_consulta', cid=c.id) }}" class="btn btn-sm btn-outline-primary w-100">
+          <i class="bi bi-file-earmark-plus me-1"></i>Registrar Ficha Clínica
+        </a>
         {% endif %}
       </div>
     </div>

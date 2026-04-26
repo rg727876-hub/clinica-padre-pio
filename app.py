@@ -400,10 +400,11 @@ def crear_paciente():
             db.close()
             return render_template('recepcionista/crear_paciente.html')
         try:
-            db.execute('''INSERT INTO pacientes (dni,nombres,apellidos,telefono,correo,direccion,fecha_nacimiento,sexo)
-                          VALUES (?,?,?,?,?,?,?,?)''',
+            db.execute('''INSERT INTO pacientes (dni,nombres,apellidos,telefono,correo,direccion,fecha_nacimiento,sexo,estado_civil,ocupacion,contacto_emergencia)
+                          VALUES (?,?,?,?,?,?,?,?,?,?,?)''',
                        (f['dni'], f['nombres'], f['apellidos'], f.get('telefono'),
-                        f.get('correo'), f.get('direccion'), f.get('fecha_nacimiento'), f.get('sexo')))
+                        f.get('correo'), f.get('direccion'), f.get('fecha_nacimiento'), f.get('sexo'),
+                        f.get('estado_civil'), f.get('ocupacion'), f.get('contacto_emergencia')))
             db.commit()
             audit(session['usuario_id'], 'REGISTRAR_PACIENTE', f"DNI: {f['dni']}", request.remote_addr)
             flash('Paciente registrado correctamente.', 'success')
@@ -426,10 +427,11 @@ def editar_paciente(pid):
             flash('El teléfono debe tener solo dígitos y máximo 9 caracteres.', 'danger')
             db.close()
             return render_template('recepcionista/editar_paciente.html', paciente=paciente)
-        db.execute('''UPDATE pacientes SET telefono=?,correo=?,direccion=?,fecha_nacimiento=?,sexo=?
-                      WHERE id=?''',
+        db.execute('''UPDATE pacientes SET telefono=?,correo=?,direccion=?,fecha_nacimiento=?,sexo=?,
+                      estado_civil=?,ocupacion=?,contacto_emergencia=? WHERE id=?''',
                    (f.get('telefono'), f.get('correo'), f.get('direccion'),
-                    f.get('fecha_nacimiento'), f.get('sexo'), pid))
+                    f.get('fecha_nacimiento'), f.get('sexo'),
+                    f.get('estado_civil'), f.get('ocupacion'), f.get('contacto_emergencia'), pid))
         db.commit()
         audit(session['usuario_id'], 'ACTUALIZAR_PACIENTE', f"ID: {pid}", request.remote_addr)
         flash('Datos actualizados correctamente.', 'success')
@@ -690,7 +692,6 @@ def doctor_mi_horario():
 @login_required(['doctor'])
 def doctor_historial_paciente(pid):
     db = get_db()
-    # Verifica que el doctor tenga al menos una cita con este paciente
     permiso = db.execute(
         "SELECT id FROM citas WHERE doctor_id=? AND paciente_id=? LIMIT 1",
         (session['usuario_id'], pid)
@@ -708,8 +709,125 @@ def doctor_historial_paciente(pid):
            ORDER BY c.fecha DESC, c.hora DESC''',
         (pid, session['usuario_id'])
     ).fetchall()
+    historia = db.execute("SELECT * FROM historia_clinica WHERE paciente_id=?", (pid,)).fetchone()
+    consultas = db.execute(
+        '''SELECT cc.*, s.nombre AS servicio, c.hora
+           FROM consulta_clinica cc
+           LEFT JOIN citas c ON cc.cita_id=c.id
+           LEFT JOIN servicios s ON c.servicio_id=s.id
+           WHERE cc.paciente_id=? AND cc.doctor_id=?
+           ORDER BY cc.fecha DESC''',
+        (pid, session['usuario_id'])
+    ).fetchall()
     db.close()
-    return render_template('doctor/historial_paciente.html', paciente=paciente, citas=citas)
+    return render_template('doctor/historial_paciente.html', paciente=paciente,
+                           citas=citas, historia=historia, consultas=consultas)
+
+
+@app.route('/doctor/pacientes/<int:pid>/historia', methods=['GET', 'POST'])
+@login_required(['doctor'])
+def doctor_historia_base(pid):
+    db = get_db()
+    permiso = db.execute(
+        "SELECT id FROM citas WHERE doctor_id=? AND paciente_id=? LIMIT 1",
+        (session['usuario_id'], pid)
+    ).fetchone()
+    if not permiso:
+        db.close()
+        flash('No tienes acceso al historial de este paciente.', 'danger')
+        return redirect(url_for('doctor_citas'))
+    paciente = db.execute("SELECT * FROM pacientes WHERE id=?", (pid,)).fetchone()
+    historia = db.execute("SELECT * FROM historia_clinica WHERE paciente_id=?", (pid,)).fetchone()
+    if request.method == 'POST':
+        f = request.form
+        if historia:
+            db.execute('''UPDATE historia_clinica SET
+                motivo_consulta=?, enfermedad_inicio=?, enfermedad_evolucion=?,
+                enfermedad_estado_actual=?, antec_sistemicos=?, antec_estomatologico=?,
+                antec_farmacologicos=?, antec_otros=?, antec_familiares=?,
+                actualizado_por=?, fecha_actualizacion=CURRENT_TIMESTAMP
+                WHERE paciente_id=?''',
+                (f.get('motivo_consulta'), f.get('enfermedad_inicio'), f.get('enfermedad_evolucion'),
+                 f.get('enfermedad_estado_actual'), f.get('antec_sistemicos'), f.get('antec_estomatologico'),
+                 f.get('antec_farmacologicos'), f.get('antec_otros'), f.get('antec_familiares'),
+                 session['usuario_id'], pid))
+        else:
+            db.execute('''INSERT INTO historia_clinica
+                (paciente_id, motivo_consulta, enfermedad_inicio, enfermedad_evolucion,
+                 enfermedad_estado_actual, antec_sistemicos, antec_estomatologico,
+                 antec_farmacologicos, antec_otros, antec_familiares, creado_por)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?)''',
+                (pid, f.get('motivo_consulta'), f.get('enfermedad_inicio'), f.get('enfermedad_evolucion'),
+                 f.get('enfermedad_estado_actual'), f.get('antec_sistemicos'), f.get('antec_estomatologico'),
+                 f.get('antec_farmacologicos'), f.get('antec_otros'), f.get('antec_familiares'),
+                 session['usuario_id']))
+        db.commit()
+        audit(session['usuario_id'], 'HISTORIA_CLINICA_BASE', f"Paciente ID: {pid}", request.remote_addr)
+        flash('Anamnesis guardada correctamente.', 'success')
+        db.close()
+        return redirect(url_for('doctor_historial_paciente', pid=pid))
+    db.close()
+    return render_template('doctor/historia_base_form.html', paciente=paciente, historia=historia)
+
+
+@app.route('/doctor/citas/<int:cid>/consulta', methods=['GET', 'POST'])
+@login_required(['doctor'])
+def doctor_consulta(cid):
+    db = get_db()
+    cita = db.execute(
+        '''SELECT c.*, p.nombres||' '||p.apellidos AS paciente_nombre,
+           p.dni AS paciente_dni, s.nombre AS servicio
+           FROM citas c
+           JOIN pacientes p ON c.paciente_id=p.id
+           JOIN servicios s ON c.servicio_id=s.id
+           WHERE c.id=? AND c.doctor_id=?''',
+        (cid, session['usuario_id'])
+    ).fetchone()
+    if not cita:
+        db.close()
+        flash('Cita no encontrada.', 'danger')
+        return redirect(url_for('doctor_citas'))
+    consulta = db.execute("SELECT * FROM consulta_clinica WHERE cita_id=?", (cid,)).fetchone()
+    if request.method == 'POST':
+        f = request.form
+        if consulta:
+            db.execute('''UPDATE consulta_clinica SET
+                vitales_pa=?, vitales_pulso=?, vitales_fr=?, vitales_temperatura=?, vitales_otros=?,
+                extra_oral_zona=?, extra_oral_otros=?, intra_oral_zona=?, intra_oral_otros=?,
+                diagnostico_presuntivo=?, examenes_complementarios=?, diagnostico_cie10=?,
+                plan_tratamiento=?, tratamiento=?, pronostico=?, control_evolucion=?, alta_paciente=?,
+                fecha_actualizacion=CURRENT_TIMESTAMP
+                WHERE cita_id=?''',
+                (f.get('vitales_pa'), f.get('vitales_pulso'), f.get('vitales_fr'),
+                 f.get('vitales_temperatura'), f.get('vitales_otros'),
+                 f.get('extra_oral_zona'), f.get('extra_oral_otros'),
+                 f.get('intra_oral_zona'), f.get('intra_oral_otros'),
+                 f.get('diagnostico_presuntivo'), f.get('examenes_complementarios'),
+                 f.get('diagnostico_cie10'), f.get('plan_tratamiento'), f.get('tratamiento'),
+                 f.get('pronostico'), f.get('control_evolucion'), f.get('alta_paciente'), cid))
+        else:
+            db.execute('''INSERT INTO consulta_clinica
+                (paciente_id, cita_id, doctor_id, fecha,
+                 vitales_pa, vitales_pulso, vitales_fr, vitales_temperatura, vitales_otros,
+                 extra_oral_zona, extra_oral_otros, intra_oral_zona, intra_oral_otros,
+                 diagnostico_presuntivo, examenes_complementarios, diagnostico_cie10,
+                 plan_tratamiento, tratamiento, pronostico, control_evolucion, alta_paciente)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)''',
+                (cita['paciente_id'], cid, session['usuario_id'], cita['fecha'],
+                 f.get('vitales_pa'), f.get('vitales_pulso'), f.get('vitales_fr'),
+                 f.get('vitales_temperatura'), f.get('vitales_otros'),
+                 f.get('extra_oral_zona'), f.get('extra_oral_otros'),
+                 f.get('intra_oral_zona'), f.get('intra_oral_otros'),
+                 f.get('diagnostico_presuntivo'), f.get('examenes_complementarios'),
+                 f.get('diagnostico_cie10'), f.get('plan_tratamiento'), f.get('tratamiento'),
+                 f.get('pronostico'), f.get('control_evolucion'), f.get('alta_paciente')))
+        db.commit()
+        audit(session['usuario_id'], 'CONSULTA_CLINICA', f"Cita ID: {cid}", request.remote_addr)
+        flash('Ficha clínica guardada correctamente.', 'success')
+        db.close()
+        return redirect(url_for('doctor_historial_paciente', pid=cita['paciente_id']))
+    db.close()
+    return render_template('doctor/consulta_form.html', cita=cita, consulta=consulta)
 
 
 # ─── CAJERO: Pagos ────────────────────────────────────────────────────────────

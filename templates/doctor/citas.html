@@ -47,9 +47,14 @@
         </div>
         <div class="d-flex justify-content-between align-items-start mb-1">
           <p class="mb-0 fw-bold"><i class="bi bi-person-fill me-2 text-primary"></i>{{ c.paciente }}</p>
-          <a href="{{ url_for('doctor_historial_paciente', pid=c.paciente_id) }}" class="btn btn-sm btn-outline-secondary" title="Ver historial">
-            <i class="bi bi-clock-history"></i>
-          </a>
+          <div class="d-flex gap-1">
+            <a href="{{ url_for('doctor_consulta', cid=c.id) }}" class="btn btn-sm btn-outline-success" title="Ficha clínica">
+              <i class="bi bi-file-earmark-medical"></i>
+            </a>
+            <a href="{{ url_for('doctor_historial_paciente', pid=c.paciente_id) }}" class="btn btn-sm btn-outline-secondary" title="Ver historial">
+              <i class="bi bi-clock-history"></i>
+            </a>
+          </div>
         </div>
         <p class="mb-1 text-muted small"><i class="bi bi-credit-card me-2"></i>DNI: {{ c.paciente_dni }}</p>
         {% if c.telefono %}<p class="mb-1 text-muted small"><i class="bi bi-telephone me-2"></i>{{ c.telefono }}</p>{% endif %}

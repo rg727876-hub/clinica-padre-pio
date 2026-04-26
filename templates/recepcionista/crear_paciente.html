@@ -45,6 +45,25 @@
           <label class="form-label fw-semibold">Dirección</label>
           <input type="text" name="direccion" class="form-control">
         </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Estado civil</label>
+          <select name="estado_civil" class="form-select">
+            <option value="">Seleccione</option>
+            <option value="Soltero/a">Soltero/a</option>
+            <option value="Casado/a">Casado/a</option>
+            <option value="Conviviente">Conviviente</option>
+            <option value="Divorciado/a">Divorciado/a</option>
+            <option value="Viudo/a">Viudo/a</option>
+          </select>
+        </div>
+        <div class="col-md-8">
+          <label class="form-label fw-semibold">Ocupación</label>
+          <input type="text" name="ocupacion" class="form-control" placeholder="Ej: Docente, Comerciante...">
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-semibold">En caso de emergencia llamar a</label>
+          <input type="text" name="contacto_emergencia" class="form-control" placeholder="Nombre y teléfono del contacto de emergencia">
+        </div>
       </div>
       <div class="d-flex gap-2 mt-4">
         <button type="submit" class="btn btn-primary px-4"><i class="bi bi-save me-2"></i>Guardar</button>

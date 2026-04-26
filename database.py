@@ -113,7 +113,69 @@ def init_db():
             fecha TEXT DEFAULT CURRENT_TIMESTAMP,
             ip TEXT
         );
+
+        CREATE TABLE IF NOT EXISTS historia_clinica (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            paciente_id INTEGER UNIQUE NOT NULL,
+            motivo_consulta TEXT,
+            enfermedad_inicio TEXT,
+            enfermedad_evolucion TEXT,
+            enfermedad_estado_actual TEXT,
+            antec_sistemicos TEXT,
+            antec_estomatologico TEXT,
+            antec_farmacologicos TEXT,
+            antec_otros TEXT,
+            antec_familiares TEXT,
+            creado_por INTEGER,
+            fecha_creacion TEXT DEFAULT CURRENT_TIMESTAMP,
+            actualizado_por INTEGER,
+            fecha_actualizacion TEXT,
+            FOREIGN KEY (paciente_id) REFERENCES pacientes(id),
+            FOREIGN KEY (creado_por) REFERENCES usuarios(id),
+            FOREIGN KEY (actualizado_por) REFERENCES usuarios(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS consulta_clinica (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            paciente_id INTEGER NOT NULL,
+            cita_id INTEGER UNIQUE,
+            doctor_id INTEGER NOT NULL,
+            fecha TEXT NOT NULL,
+            vitales_pa TEXT,
+            vitales_pulso TEXT,
+            vitales_fr TEXT,
+            vitales_temperatura TEXT,
+            vitales_otros TEXT,
+            extra_oral_zona TEXT,
+            extra_oral_otros TEXT,
+            intra_oral_zona TEXT,
+            intra_oral_otros TEXT,
+            diagnostico_presuntivo TEXT,
+            examenes_complementarios TEXT,
+            diagnostico_cie10 TEXT,
+            plan_tratamiento TEXT,
+            tratamiento TEXT,
+            pronostico TEXT,
+            control_evolucion TEXT,
+            alta_paciente TEXT,
+            fecha_creacion TEXT DEFAULT CURRENT_TIMESTAMP,
+            fecha_actualizacion TEXT,
+            FOREIGN KEY (paciente_id) REFERENCES pacientes(id),
+            FOREIGN KEY (cita_id) REFERENCES citas(id),
+            FOREIGN KEY (doctor_id) REFERENCES usuarios(id)
+        );
     ''')
+
+    # Migración: columnas nuevas en pacientes
+    for col_def in [
+        'estado_civil TEXT',
+        'ocupacion TEXT',
+        'contacto_emergencia TEXT',
+    ]:
+        try:
+            c.execute(f"ALTER TABLE pacientes ADD COLUMN {col_def}")
+        except Exception:
+            pass
 
     # Crear administrador por defecto
     admin_pass = hashlib.sha256('admin123'.encode()).hexdigest()
